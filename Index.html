@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ChatGPT AI Chatbot</title>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 20px;
+    }
+    #chatBox {
+      height: 400px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      background: white;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .msg { margin-bottom: 15px; }
+    .user { color: blue; font-weight: bold; }
+    .bot { color: green; font-weight: bold; }
+    #userInput {
+      width: 75%;
+      padding: 10px;
+      border: 1px solid #ccc;
+    }
+    #sendBtn {
+      padding: 10px 15px;
+      background: #4CAF50;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Ask ChatGPT (GPT-3.5 Turbo)</h2>
+  <div id="chatBox"></div>
+
+  <input type="text" id="userInput" placeholder="Ask something..." />
+  <button id="sendBtn">Send</button>
+
+  <script>
+    // ✅ Replace with your OpenAI key from https://platform.openai.com/account/api-keys
+    const apiKey = "YOUR_OPENAI_API_KEY_HERE";
+
+    async function askChatGPT(question) {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + apiKey
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [
+            { role: "system", content: "You are a helpful assistant." },
+            { role: "user", content: question }
+          ]
+        })
+      });
+
+      const data = await response.json();
+      return data.choices[0].message.content.trim();
+    }
+
+    function appendMessage(sender, text) {
+      const className = sender === "You" ? "user" : "bot";
+      $("#chatBox").append(`<div class="msg"><span class="${className}">${sender}:</span> ${text}</div>`);
+      $("#chatBox").scrollTop($("#chatBox")[0].scrollHeight);
+    }
+
+    $("#sendBtn").on("click", async function () {
+      const input = $("#userInput").val().trim();
+      if (!input) return;
+
+      appendMessage("You", input);
+      $("#userInput").val("");
+      appendMessage("AI", "Typing...");
+
+      try {
+        const reply = await askChatGPT(input);
+        $(".bot").last().parent().remove(); // remove "Typing..."
+        appendMessage("AI", reply);
+      } catch (error) {
+        $(".bot").last().parent().remove();
+        appendMessage("AI", "Something went wrong. Try again later.");
+        console.error(error);
+      }
+    });
+
+    $("#userInput").keypress(function (e) {
+      if (e.which === 13) $("#sendBtn").click();
+    });
+  </script>
+</body>
+</html>
